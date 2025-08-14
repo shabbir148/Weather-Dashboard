@@ -1,7 +1,18 @@
 import React from "react";
 import { WeatherData, WeatherResponse, ChartDataPoint } from "../types/weather";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
+
 import { fetchWeatherData } from "../utils/api";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import {
   Activity,
   MapPin,
@@ -79,6 +90,20 @@ const WeatherDashboard: React.FC = () => {
       setLoading(false);
     }
   }, [latitude, longitude, startDate, endDate]);
+  // Process data for chart
+  const chartData = useMemo<ChartDataPoint[]>(() => {
+    if (!weatherData) return [];
+
+    return weatherData.daily.time.map((date, index) => ({
+      date: new Date(date).toLocaleDateString(),
+      maxTemp: weatherData.daily.temperature_2m_max[index] ?? null,
+      minTemp: weatherData.daily.temperature_2m_min[index] ?? null,
+      meanTemp: weatherData.daily.temperature_2m_mean[index] ?? null,
+      maxApparent: weatherData.daily.apparent_temperature_max[index] ?? null,
+      minApparent: weatherData.daily.apparent_temperature_min[index] ?? null,
+      meanApparent: weatherData.daily.apparent_temperature_mean[index] ?? null,
+    }));
+  }, [weatherData]);
   const today = new Date().toISOString().split("T")[0];
 
   return (
@@ -194,6 +219,100 @@ const WeatherDashboard: React.FC = () => {
           <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 flex items-center gap-3">
             <AlertCircle className="text-red-600" size={20} />
             <p className="text-red-700 font-medium">{error}</p>
+          </div>
+        )}
+        {/* Results Section */}
+        {weatherData && (
+          <div className="space-y-8">
+            {/* Chart Section */}
+            <div className="bg-white rounded-2xl shadow-xl p-6 border border-gray-100">
+              <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+                <Activity className="text-blue-600" size={24} />
+                Temperature Trends
+              </h2>
+              <div className="h-96">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <XAxis
+                      dataKey="date"
+                      tick={{ fontSize: 12 }}
+                      angle={-45}
+                      textAnchor="end"
+                      height={80}
+                    />
+                    <YAxis
+                      tick={{ fontSize: 12 }}
+                      label={{
+                        value: `Temperature (${weatherData.daily_units.temperature_2m_max})`,
+                        angle: -90,
+                        position: "insideLeft",
+                      }}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "rgba(255, 255, 255, 0.95)",
+                        border: "1px solid #e5e7eb",
+                        borderRadius: "8px",
+                        boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                      }}
+                    />
+                    <Legend />
+                    <Line
+                      type="monotone"
+                      dataKey="maxTemp"
+                      stroke="#ef4444"
+                      strokeWidth={2}
+                      name="Max Temperature"
+                      connectNulls={false}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="minTemp"
+                      stroke="#3b82f6"
+                      strokeWidth={2}
+                      name="Min Temperature"
+                      connectNulls={false}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="meanTemp"
+                      stroke="#10b981"
+                      strokeWidth={2}
+                      name="Mean Temperature"
+                      connectNulls={false}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="maxApparent"
+                      stroke="#f59e0b"
+                      strokeWidth={2}
+                      strokeDasharray="5 5"
+                      name="Max Apparent"
+                      connectNulls={false}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="minApparent"
+                      stroke="#8b5cf6"
+                      strokeWidth={2}
+                      strokeDasharray="5 5"
+                      name="Min Apparent"
+                      connectNulls={false}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="meanApparent"
+                      stroke="#ec4899"
+                      strokeWidth={2}
+                      strokeDasharray="5 5"
+                      name="Mean Apparent"
+                      connectNulls={false}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
           </div>
         )}
       </div>
