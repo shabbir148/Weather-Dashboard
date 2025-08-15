@@ -30,3 +30,13 @@ export interface ChartDataPoint {
   minApparent: number | null;
   meanApparent: number | null;
 }
+
+export interface TableRow {
+  date: string;
+  maxTemp: string;
+  minTemp: string;
+  meanTemp: string;
+  maxApparent: string;
+  minApparent: string;
+  meanApparent: string;
+}

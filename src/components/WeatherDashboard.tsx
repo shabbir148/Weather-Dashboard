@@ -1,5 +1,5 @@
 import React from "react";
-import { WeatherData, WeatherResponse, ChartDataPoint } from "../types/weather";
+import { WeatherResponse, ChartDataPoint, TableRow } from "../types/weather";
 import {
   LineChart,
   Line,
@@ -19,6 +19,9 @@ import {
   Calendar,
   Thermometer,
   AlertCircle,
+  ChevronRight,
+  ChevronLeft,
+  Eye,
 } from "lucide-react";
 const WeatherDashboard: React.FC = () => {
   // State management
@@ -104,6 +107,34 @@ const WeatherDashboard: React.FC = () => {
       meanApparent: weatherData.daily.apparent_temperature_mean[index] ?? null,
     }));
   }, [weatherData]);
+
+  // Process data for table with pagination
+  const tableData = useMemo<TableRow[]>(() => {
+    if (!weatherData) return [];
+
+    return weatherData.daily.time.map((date, index) => ({
+      date: new Date(date).toLocaleDateString(),
+      maxTemp: weatherData.daily.temperature_2m_max[index]?.toFixed(1) ?? "N/A",
+      minTemp: weatherData.daily.temperature_2m_min[index]?.toFixed(1) ?? "N/A",
+      meanTemp:
+        weatherData.daily.temperature_2m_mean[index]?.toFixed(1) ?? "N/A",
+      maxApparent:
+        weatherData.daily.apparent_temperature_max[index]?.toFixed(1) ?? "N/A",
+      minApparent:
+        weatherData.daily.apparent_temperature_min[index]?.toFixed(1) ?? "N/A",
+      meanApparent:
+        weatherData.daily.apparent_temperature_mean[index]?.toFixed(1) ?? "N/A",
+    }));
+  }, [weatherData]);
+
+  // Pagination calculations
+  const totalPages = Math.ceil(tableData.length / rowsPerPage);
+  const startIndex = (currentPage - 1) * rowsPerPage;
+  const paginatedData = tableData.slice(startIndex, startIndex + rowsPerPage);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(Math.max(1, Math.min(page, totalPages)));
+  };
   const today = new Date().toISOString().split("T")[0];
 
   return (
@@ -312,6 +343,154 @@ const WeatherDashboard: React.FC = () => {
                   </LineChart>
                 </ResponsiveContainer>
               </div>
+            </div>
+            {/* Table Section */}
+            <div className="bg-white rounded-2xl shadow-xl border border-gray-100">
+              <div className="p-6 border-b border-gray-200">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                  <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                    <Eye className="text-blue-600" size={24} />
+                    Data Table
+                  </h2>
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm font-medium text-gray-700">
+                      Rows per page:
+                    </label>
+                    <select
+                      value={rowsPerPage}
+                      onChange={(e) => {
+                        setRowsPerPage(Number(e.target.value));
+                        setCurrentPage(1);
+                      }}
+                      className="px-3 py-1 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value={10}>10</option>
+                      <option value={20}>20</option>
+                      <option value={50}>50</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                        Date
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                        Max Temp
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                        Min Temp
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                        Mean Temp
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                        Max Apparent
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                        Min Apparent
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                        Mean Apparent
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {paginatedData.map((row, index) => (
+                      <tr
+                        key={index}
+                        className="hover:bg-gray-50 transition-colors duration-150"
+                      >
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {row.date}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                          {row.maxTemp}°
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                          {row.minTemp}°
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                          {row.meanTemp}°
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                          {row.maxApparent}°
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                          {row.minApparent}°
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                          {row.meanApparent}°
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm text-gray-700">
+                      Showing {startIndex + 1} to{" "}
+                      {Math.min(startIndex + rowsPerPage, tableData.length)} of{" "}
+                      {tableData.length} results
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => handlePageChange(currentPage - 1)}
+                        disabled={currentPage === 1}
+                        className="px-3 py-1 border border-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100 transition-colors duration-150"
+                      >
+                        <ChevronLeft size={16} />
+                      </button>
+
+                      {Array.from(
+                        { length: Math.min(5, totalPages) },
+                        (_, i) => {
+                          let pageNum : number;
+                          if (totalPages <= 5) {
+                            pageNum = i + 1;
+                          } else if (currentPage <= 3) {
+                            pageNum = i + 1;
+                          } else if (currentPage >= totalPages - 2) {
+                            pageNum = totalPages - 4 + i;
+                          } else {
+                            pageNum = currentPage - 2 + i;
+                          }
+
+                          return (
+                            <button
+                              key={pageNum}
+                              onClick={() => handlePageChange(pageNum)}
+                              className={`px-3 py-1 border rounded-md transition-colors duration-150 ${
+                                currentPage === pageNum
+                                  ? "bg-blue-600 text-white border-blue-600"
+                                  : "border-gray-300 hover:bg-gray-100"
+                              }`}
+                            >
+                              {pageNum}
+                            </button>
+                          );
+                        }
+                      )}
+
+                      <button
+                        onClick={() => handlePageChange(currentPage + 1)}
+                        disabled={currentPage === totalPages}
+                        className="px-3 py-1 border border-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100 transition-colors duration-150"
+                      >
+                        <ChevronRight size={16} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
